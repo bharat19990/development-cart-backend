@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validate = validate;
+exports.validateEnv = validateEnv;
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 var Environment;
@@ -51,7 +51,7 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], EnvironmentVariables.prototype, "JWT_EXPIRES_IN", void 0);
-function validate(config) {
+function validateEnv(config) {
     const validatedConfig = (0, class_transformer_1.plainToInstance)(EnvironmentVariables, config, {
         enableImplicitConversion: true,
     });

@@ -27,7 +27,7 @@ let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
             method: request.method,
             message,
         };
-        if (status >= common_1.HttpStatus.INTERNAL_SERVER_ERROR) {
+        if (status >= Number(common_1.HttpStatus.INTERNAL_SERVER_ERROR)) {
             this.logger.error(`${request.method} ${request.url}`, exception instanceof Error ? exception.stack : String(exception));
         }
         response.status(status).json(errorBody);

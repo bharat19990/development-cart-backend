@@ -1,36 +1,16 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { App } from 'supertest/types';
-import { AllExceptionsFilter } from '../src/common/filters';
-import { AppModule } from '../src/app.module';
+import { createApp } from '../src/app';
+import { disconnectPrisma } from '../src/services/prisma.service';
 
 describe('Health (e2e)', () => {
-  let app: INestApplication<App>;
+  const app = createApp();
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.useGlobalFilters(new AllExceptionsFilter());
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-    await app.init();
-  });
-
-  afterEach(async () => {
-    await app.close();
+  afterAll(async () => {
+    await disconnectPrisma();
   });
 
   it('/ (GET)', () => {
-    return request(app.getHttpServer())
+    return request(app)
       .get('/')
       .expect(200)
       .expect((res: { body: { status: string; message: string } }) => {
@@ -42,7 +22,7 @@ describe('Health (e2e)', () => {
   });
 
   it('/health (GET)', () => {
-    return request(app.getHttpServer())
+    return request(app)
       .get('/health')
       .expect(200)
       .expect((res: { body: { status: string } }) => {

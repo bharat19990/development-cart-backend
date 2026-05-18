@@ -10,5 +10,5 @@ declare class EnvironmentVariables {
     JWT_SECRET: string;
     JWT_EXPIRES_IN: string;
 }
-export declare function validate(config: Record<string, unknown>): EnvironmentVariables;
+export declare function validateEnv(config: Record<string, unknown>): EnvironmentVariables;
 export {};

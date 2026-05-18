@@ -8,7 +8,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
+const core_1 = require("@nestjs/core");
 const config_1 = require("@nestjs/config");
+const guards_1 = require("./common/guards");
 const config_2 = require("./config");
 const modules_1 = require("./modules");
 let AppModule = class AppModule {
@@ -24,7 +26,19 @@ exports.AppModule = AppModule = __decorate([
                 envFilePath: '.env',
             }),
             modules_1.PrismaModule,
+            modules_1.AuthModule,
             modules_1.HealthModule,
+            modules_1.UsersModule,
+        ],
+        providers: [
+            {
+                provide: core_1.APP_GUARD,
+                useClass: guards_1.AuthGuard,
+            },
+            {
+                provide: core_1.APP_GUARD,
+                useClass: guards_1.RoleGuard,
+            },
         ],
     })
 ], AppModule);
