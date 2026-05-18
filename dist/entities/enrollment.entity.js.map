@@ -1,0 +1,1 @@
+{"version":3,"file":"enrollment.entity.js","sourceRoot":"","sources":["../../src/entities/enrollment.entity.ts"],"names":[],"mappings":";;;AAEA,MAAa,gBAAgB;IAC3B,EAAE,CAAS;IACX,MAAM,CAAS;IACf,SAAS,CAAS;IAClB,WAAW,CAAc;IACzB,aAAa,CAAgB;IAC7B,UAAU,CAAO;IACjB,SAAS,CAAO;IAEhB,YAAY,OAAkC;QAC5C,MAAM,CAAC,MAAM,CAAC,IAAI,EAAE,OAAO,CAAC,CAAC;IAC/B,CAAC;CACF;AAZD,4CAYC"}

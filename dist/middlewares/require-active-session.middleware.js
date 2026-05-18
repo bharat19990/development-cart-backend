@@ -18,7 +18,7 @@ exports.requireActiveSession = (0, async_handler_util_1.asyncHandler)(async (req
         orderBy: { updatedAt: 'desc' },
     });
     if (!activeSession) {
-        throw new errors_util_1.NotFoundError('No active session found. Profile completion is not available.');
+        throw new errors_util_1.NotFoundError('No active session found');
     }
     req.activeSession = activeSession;
     next();

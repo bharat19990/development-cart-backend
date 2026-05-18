@@ -18,9 +18,7 @@ export const requireActiveSession = asyncHandler(async (req, _res, next) => {
   });
 
   if (!activeSession) {
-    throw new NotFoundError(
-      'No active session found. Profile completion is not available.',
-    );
+    throw new NotFoundError('No active session found');
   }
 
   req.activeSession = activeSession;

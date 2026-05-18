@@ -34,6 +34,11 @@ enum PaymentStatus {
   WAIVED
 }
 
+enum PaymentType {
+  SELF
+  SPONSORED
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -101,6 +106,7 @@ model Enrollment {
   id            String        @id @default(uuid())
   userId        String        @map("user_id")
   sessionId     String        @map("session_id")
+  paymentType   PaymentType   @map("payment_type")
   paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
   enrolledAt    DateTime      @default(now()) @map("enrolled_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
