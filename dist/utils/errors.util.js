@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ValidationRequestError = exports.ForbiddenError = exports.UnauthorizedError = exports.ConflictError = exports.AppError = void 0;
+exports.BadRequestError = exports.NotFoundError = exports.ValidationRequestError = exports.ForbiddenError = exports.UnauthorizedError = exports.ConflictError = exports.AppError = void 0;
 class AppError extends Error {
     statusCode;
     messages;
@@ -36,4 +36,16 @@ class ValidationRequestError extends AppError {
     }
 }
 exports.ValidationRequestError = ValidationRequestError;
+class NotFoundError extends AppError {
+    constructor(message) {
+        super(404, message);
+    }
+}
+exports.NotFoundError = NotFoundError;
+class BadRequestError extends AppError {
+    constructor(message) {
+        super(400, message);
+    }
+}
+exports.BadRequestError = BadRequestError;
 //# sourceMappingURL=errors.util.js.map

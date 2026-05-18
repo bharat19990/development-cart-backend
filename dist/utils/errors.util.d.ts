@@ -15,3 +15,9 @@ export declare class ForbiddenError extends AppError {
 export declare class ValidationRequestError extends AppError {
     constructor(messages: string[]);
 }
+export declare class NotFoundError extends AppError {
+    constructor(message: string);
+}
+export declare class BadRequestError extends AppError {
+    constructor(message: string);
+}
