@@ -79,8 +79,9 @@ export class EnrollmentService {
 
     const sponsorship = await prisma.sponsorship.findUnique({
       where: {
-        organizationId_sessionId: {
+        organizationId_userId_sessionId: {
           organizationId,
+          userId: user.id,
           sessionId,
         },
       },
@@ -89,7 +90,7 @@ export class EnrollmentService {
 
     if (!sponsorship) {
       throw new NotFoundError(
-        'No sponsorship found for this organization and active session',
+        'No sponsorship found for this user, organization, and active session',
       );
     }
 

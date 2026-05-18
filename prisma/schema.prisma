@@ -53,10 +53,11 @@ model User {
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  organization       Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  administeredSessions Session[]   @relation("SessionAdmin")
-  enrollments        Enrollment[]
-  scores             Score[]
+  organization         Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  administeredSessions Session[]     @relation("SessionAdmin")
+  enrollments          Enrollment[]
+  scores               Score[]
+  sponsorshipsReceived Sponsorship[] @relation("SponsoredUser")
 
   @@index([organizationId])
   @@map("users")
@@ -111,8 +112,9 @@ model Enrollment {
   enrolledAt    DateTime      @default(now()) @map("enrolled_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session     Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sponsorship Sponsorship?
 
   @@unique([userId, sessionId])
   @@index([sessionId])
@@ -173,17 +175,22 @@ model Score {
 model Sponsorship {
   id             String        @id @default(uuid())
   organizationId String        @map("organization_id")
+  userId         String        @map("user_id")
   sessionId      String        @map("session_id")
+  enrollmentId   String        @unique @map("enrollment_id")
   amount         Decimal       @db.Decimal(12, 2)
-  paymentStatus  PaymentStatus @default(PENDING) @map("payment_status")
+  paymentStatus  PaymentStatus @default(PAID) @map("payment_status")
   sponsoredAt    DateTime      @default(now()) @map("sponsored_at")
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation("SponsoredUser", fields: [userId], references: [id], onDelete: Cascade)
   session      Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  enrollment   Enrollment   @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
 
-  @@unique([organizationId, sessionId])
+  @@unique([organizationId, userId, sessionId])
   @@index([sessionId])
+  @@index([userId])
   @@map("sponsorships")
 }

@@ -44,22 +44,22 @@ class EnrollmentService {
         if (dto.paymentType === client_1.PaymentType.SELF) {
             return client_1.PaymentStatus.PENDING;
         }
-        const organizationId = dto.organizationId ??
-            (await this.getUserOrganizationId(user.id));
+        const organizationId = dto.organizationId ?? (await this.getUserOrganizationId(user.id));
         if (!organizationId) {
             throw new errors_util_1.BadRequestError('organizationId is required for SPONSORED enrollment');
         }
         const sponsorship = await prisma_service_1.prisma.sponsorship.findUnique({
             where: {
-                organizationId_sessionId: {
+                organizationId_userId_sessionId: {
                     organizationId,
+                    userId: user.id,
                     sessionId,
                 },
             },
             select: { paymentStatus: true },
         });
         if (!sponsorship) {
-            throw new errors_util_1.NotFoundError('No sponsorship found for this organization and active session');
+            throw new errors_util_1.NotFoundError('No sponsorship found for this user, organization, and active session');
         }
         if (sponsorship.paymentStatus !== client_1.PaymentStatus.PAID) {
             return client_1.PaymentStatus.PENDING;
