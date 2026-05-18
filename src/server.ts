@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { config } from './config';
 import { createApp } from './app';
 import { disconnectPrisma } from './services/prisma.service';

@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.config = void 0;
+require("reflect-metadata");
 require("dotenv/config");
 const configuration_1 = __importDefault(require("./configuration"));
 const env_validation_1 = require("./env.validation");

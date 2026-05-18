@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+require("reflect-metadata");
 const config_1 = require("./config");
 const app_1 = require("./app");
 const prisma_service_1 = require("./services/prisma.service");

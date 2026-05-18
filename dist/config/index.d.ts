@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import 'dotenv/config';
 export declare const config: {
     readonly nodeEnv: string;
