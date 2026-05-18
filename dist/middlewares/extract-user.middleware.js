@@ -19,6 +19,7 @@ exports.extractUser = (0, async_handler_util_1.asyncHandler)(async (req, _res, n
                 id: true,
                 email: true,
                 role: true,
+                profileCompleted: true,
                 createdAt: true,
                 updatedAt: true,
             },

@@ -12,6 +12,7 @@ const userSelect = {
   id: true,
   email: true,
   role: true,
+  profileCompleted: true,
   createdAt: true,
   updatedAt: true,
 } as const;

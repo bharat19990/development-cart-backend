@@ -4,6 +4,7 @@ export class UserEntity {
   id: string;
   email: string;
   role: Role;
+  profileCompleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 

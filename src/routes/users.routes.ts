@@ -2,9 +2,17 @@ import { Router } from 'express';
 import * as usersController from '../controllers/users.controller';
 import { authenticateUser } from '../middlewares/authenticate-user.middleware';
 import { authorizeRoles } from '../middlewares/authorize-roles.middleware';
+import { requireActiveSession } from '../middlewares/require-active-session.middleware';
 import { Role } from '../enums/role.enum';
 
 const router = Router();
+
+router.post(
+  '/complete-profile',
+  authenticateUser,
+  requireActiveSession,
+  usersController.completeProfile,
+);
 
 router.get('/me', authenticateUser, usersController.getProfile);
 

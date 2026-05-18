@@ -5,6 +5,7 @@ class UserEntity {
     id;
     email;
     role;
+    profileCompleted;
     createdAt;
     updatedAt;
     constructor(partial) {

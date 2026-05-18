@@ -22,6 +22,7 @@ export const extractUser = asyncHandler(async (req, _res, next) => {
         id: true,
         email: true,
         role: true,
+        profileCompleted: true,
         createdAt: true,
         updatedAt: true,
       },
