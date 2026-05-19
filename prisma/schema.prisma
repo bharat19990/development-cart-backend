@@ -7,10 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ---------------------------------------------------------------------------
-// Enums
-// ---------------------------------------------------------------------------
-
 enum Role {
   SUPERADMIN
   ADMIN
@@ -39,25 +35,23 @@ enum PaymentType {
   SPONSORED
 }
 
-// ---------------------------------------------------------------------------
-// Models
-// ---------------------------------------------------------------------------
-
 model User {
-  id                String   @id @default(uuid())
-  email             String   @unique
-  password          String
-  role              Role     @default(USER)
-  profileCompleted  Boolean  @default(false) @map("profile_completed")
-  organizationId    String?  @map("organization_id")
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(uuid())
+  email            String   @unique
+  password         String
+  role             Role     @default(USER)
+  profileCompleted Boolean  @default(false) @map("profile_completed")
+  organizationId   String?  @map("organization_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
-  organization         Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  administeredSessions Session[]     @relation("SessionAdmin")
-  enrollments          Enrollment[]
-  scores               Score[]
-  sponsorshipsReceived Sponsorship[] @relation("SponsoredUser")
+  organization           Organization?   @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  administeredSessions   Session[]       @relation("SessionAdmin")
+  enrollments            Enrollment[]
+  scores                 Score[]
+  sponsorshipsReceived Sponsorship[]   @relation("SponsoredUser")
+  dailyVideoWatches      DailyVideoWatch[]
+  dailyQuizAttempts      DailyQuizAttempt[]
 
   @@index([organizationId])
   @@map("users")
@@ -85,21 +79,25 @@ model Session {
   status         SessionStatus @default(DRAFT)
   adminId        String        @map("admin_id")
   organizationId String?       @map("organization_id")
-  startsAt       DateTime?     @map("starts_at")
-  endsAt         DateTime?     @map("ends_at")
+  startsAt       DateTime      @map("starts_at")
+  endsAt         DateTime      @map("ends_at")
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 
-  admin          User           @relation("SessionAdmin", fields: [adminId], references: [id], onDelete: Restrict)
-  organization   Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  enrollments    Enrollment[]
-  videos         Video[]
-  quizzes        Quiz[]
-  sponsorships   Sponsorship[]
+  admin            User              @relation("SessionAdmin", fields: [adminId], references: [id], onDelete: Restrict)
+  organization     Organization?     @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  enrollments      Enrollment[]
+  videos            Video[]
+  quizzes           Quiz[]
+  scores            Score[]
+  sponsorships      Sponsorship[]
+  dailyVideoWatches DailyVideoWatch[]
+  dailyQuizAttempts DailyQuizAttempt[]
 
   @@index([adminId])
   @@index([organizationId])
   @@index([status])
+  @@index([endsAt])
   @@map("sessions")
 }
 
@@ -109,6 +107,7 @@ model Enrollment {
   sessionId     String        @map("session_id")
   paymentType   PaymentType   @map("payment_type")
   paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
+  amount        Decimal       @default(100) @db.Decimal(12, 2)
   enrolledAt    DateTime      @default(now()) @map("enrolled_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
@@ -132,7 +131,8 @@ model Video {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session           Session           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  dailyVideoWatches DailyVideoWatch[]
 
   @@index([sessionId])
   @@map("videos")
@@ -147,8 +147,9 @@ model Quiz {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  scores  Score[]
+  session           Session            @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  scores            Score[]
+  dailyQuizAttempts DailyQuizAttempt[]
 
   @@index([sessionId])
   @@map("quizzes")
@@ -158,18 +159,55 @@ model Score {
   id          String   @id @default(uuid())
   userId      String   @map("user_id")
   quizId      String   @map("quiz_id")
+  sessionId   String   @map("session_id")
   value       Int
   maxValue    Int      @default(100) @map("max_value")
   completedAt DateTime @default(now()) @map("completed_at")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz    Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, quizId])
+  @@index([userId])
+  @@index([sessionId])
   @@index([quizId])
   @@map("scores")
+}
+
+model DailyVideoWatch {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  sessionId    String   @map("session_id")
+  videoId      String   @map("video_id")
+  activityDate DateTime @db.Date @map("activity_date")
+  watchedAt    DateTime @default(now()) @map("watched_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  video   Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sessionId, activityDate])
+  @@map("daily_video_watches")
+}
+
+model DailyQuizAttempt {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  sessionId    String   @map("session_id")
+  quizId       String   @map("quiz_id")
+  activityDate DateTime @db.Date @map("activity_date")
+  value        Int
+  maxValue     Int      @default(100) @map("max_value")
+  attemptedAt  DateTime @default(now()) @map("attempted_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  quiz    Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sessionId, activityDate])
+  @@map("daily_quiz_attempts")
 }
 
 model Sponsorship {

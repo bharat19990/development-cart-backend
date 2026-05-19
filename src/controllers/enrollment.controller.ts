@@ -25,3 +25,13 @@ export const enroll = asyncHandler(async (req: Request, res: Response) => {
     session: req.activeSession,
   });
 });
+
+export const getMyEnrollments = asyncHandler(
+  async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw new UnauthorizedError();
+    }
+    const enrollments = await enrollmentService.getMyEnrollments(req.user.id);
+    res.json({ enrollments });
+  },
+);

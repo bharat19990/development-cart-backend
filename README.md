@@ -36,8 +36,22 @@ A **session-based learning platform** backend built with **Express.js**, **TypeS
 | **Enrollment** | Users enroll in the active session (`SELF` or `SPONSORED` payment type) |
 | **Sponsorship** | Organizations sponsor users for the active session, linked to enrollment |
 | **Profile** | Users complete profile when an active session exists |
+| **Learning** | 1 video + 1 quiz per day; scores; historical read after session expiry |
+| **Session lifecycle** | 30-day sessions, auto-expiry job, re-enrollment per session |
+| **Superadmin** | Single seeded account; creates admins & organizations (no public superadmin register) |
+| **Enrollment fee** | $100 USD (configurable) for self-pay |
 | **Validation** | Request validation via `class-validator` / `class-transformer` |
 | **ORM** | Prisma with PostgreSQL (users, sessions, enrollments, organizations, sponsorships, videos, quizzes, scores) |
+
+## Assessment deliverables
+
+Design documentation lives in [`docs/`](docs/):
+
+- [architecture.md](docs/architecture.md) — HLD, monolith rationale, RBAC
+- [database.md](docs/database.md) — ER diagram, session/enrollment/history model
+- [api-design.md](docs/api-design.md) — Required flows with samples
+- [session-lifecycle.md](docs/session-lifecycle.md) — Active/expired/re-enroll
+- [edge-cases.md](docs/edge-cases.md) — 15+ edge cases and solutions
 
 ---
 
@@ -124,11 +138,14 @@ docker compose up -d
 
 Create a database (e.g. `development_cart`) and set `DATABASE_URL` in `.env`.
 
-### 4. Migrations
+### 4. Migrations & seed
 
 ```bash
 npm run prisma:migrate
+npm run prisma:seed
 ```
+
+Default superadmin: `superadmin@system.local` / `SuperAdmin123!` (override via `.env`).
 
 ### 5. Run
 
@@ -154,6 +171,10 @@ Health check: `GET http://localhost:3000/health`
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `JWT_SECRET` | Yes | Secret for signing JWTs |
 | `JWT_EXPIRES_IN` | No | Token expiry (default: `1d`) |
+| `ENROLLMENT_FEE_USD` | No | Enrollment price (default: `100`) |
+| `SESSION_DURATION_DAYS` | No | Admin session length (default: `30`) |
+| `SUPERADMIN_EMAIL` | No | Seed email |
+| `SUPERADMIN_PASSWORD` | No | Seed password |
 
 Example (`.env.example`):
 
@@ -220,8 +241,10 @@ Base URL: `http://localhost:3000`
 |--------|----------|------|----------------|
 | `GET` | `/` | — | Health status |
 | `GET` | `/health` | — | Health status |
-| `POST` | `/auth/register` | — | Create account |
+| `POST` | `/auth/register` | — | Create **USER** account only |
 | `POST` | `/auth/login` | — | Login, returns `accessToken` |
+| `POST` | `/admins` | JWT | `SUPERADMIN` — create admin |
+| `POST` | `/organizations` | JWT | `SUPERADMIN` — create org + optional org account |
 | `GET` | `/users/me` | JWT | Current user profile |
 | `GET` | `/users/admin` | JWT | `ADMIN`, `SUPERADMIN` |
 | `GET` | `/users/organization` | JWT | `ORGANIZATION` |
@@ -230,6 +253,13 @@ Base URL: `http://localhost:3000`
 | `GET` | `/sessions/active` | JWT | Current active session |
 | `POST` | `/enroll` | JWT | Requires **ACTIVE** session |
 | `POST` | `/sponsor` | JWT | `ORGANIZATION` + **ACTIVE** session |
+| `GET` | `/enroll/history` | JWT | All enrollments (past + current) |
+| `POST` | `/content/videos` | JWT | `ADMIN` — add video to active session |
+| `POST` | `/content/quizzes` | JWT | `ADMIN` — add quiz |
+| `POST` | `/learning/videos/:id/watch` | JWT | 1 video per day (paid + profile) |
+| `POST` | `/learning/quizzes/:id/attempt` | JWT | 1 quiz per day |
+| `GET` | `/learning/scores` | JWT | Score history |
+| `GET` | `/learning/history/:sessionId` | JWT | Past session data (read-only) |
 
 ### Request bodies
 
@@ -243,7 +273,7 @@ Base URL: `http://localhost:3000`
 }
 ```
 
-`role` optional: `SUPERADMIN` \| `ADMIN` \| `USER` \| `ORGANIZATION` (default: `USER`).
+Only `email` and `password` — role is always `USER`.
 
 **POST `/auth/login`**
 
@@ -272,7 +302,8 @@ Base URL: `http://localhost:3000`
 
 ```json
 {
-  "paymentType": "SELF"
+  "paymentType": "SELF",
+  "amount": 100
 }
 ```
 
@@ -344,11 +375,14 @@ Authorization: Bearer <accessToken>
 
 ## Example workflow
 
-1. Register **SUPERADMIN** → save `accessToken`.
-2. Register **ADMIN** → note `user.id` for `adminId`.
-3. `POST /sessions` with `"status": "ACTIVE"` (as superadmin).
-4. Register **USER** → `POST /enroll`, optionally `POST /users/complete-profile`.
-5. Register **ORGANIZATION** (ensure `organizationId` is set on user if needed) → `POST /sponsor` for a user.
+1. `npm run prisma:seed` → login as superadmin.
+2. `POST /admins` → create admin.
+3. `POST /organizations` → create org account (optional).
+4. `POST /sessions` with `adminId` → 30-day active session.
+5. Admin adds videos/quizzes via `/content/*`.
+6. User registers → `complete-profile` → `POST /enroll` with `amount: 100`.
+7. Or org `POST /sponsor` then user learns via `/learning/*`.
+8. After expiry, user views `GET /learning/history/:sessionId` and re-enrolls on next session.
 
 ---
 

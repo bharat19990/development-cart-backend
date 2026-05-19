@@ -6,5 +6,6 @@ export declare class SessionService {
     private assertAdminAssignable;
     private assertOrganizationExists;
     private assertNoActiveSession;
+    private assertAdminNotInOpenSession;
 }
 export declare const sessionService: SessionService;

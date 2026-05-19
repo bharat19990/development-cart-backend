@@ -6,6 +6,7 @@ export class EnrollmentEntity {
   sessionId: string;
   paymentType: PaymentType;
   paymentStatus: PaymentStatus;
+  amount: string;
   enrolledAt: Date;
   updatedAt: Date;
 

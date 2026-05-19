@@ -15,4 +15,6 @@ router.post(
   enrollmentController.enroll,
 );
 
+router.get('/history', authenticateUser, enrollmentController.getMyEnrollments);
+
 export default router;

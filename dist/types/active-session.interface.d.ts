@@ -3,6 +3,7 @@ export interface ActiveSessionContext {
     id: string;
     title: string;
     status: SessionStatus;
-    startsAt: Date | null;
-    endsAt: Date | null;
+    adminId: string;
+    startsAt: Date;
+    endsAt: Date;
 }

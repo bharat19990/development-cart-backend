@@ -12,4 +12,8 @@ export const config = {
   port: appConfig.port,
   database: appConfig.database,
   jwt: appConfig.jwt,
-} as const;
+  enrollmentFeeUsd: appConfig.enrollmentFeeUsd,
+  sessionDurationDays: appConfig.sessionDurationDays,
+  superadminEmail: appConfig.superadminEmail,
+  superadminPassword: appConfig.superadminPassword,
+};

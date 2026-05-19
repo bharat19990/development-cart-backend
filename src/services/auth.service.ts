@@ -1,4 +1,4 @@
-import { Role } from '../enums/role.enum';
+import { Role } from '@prisma/client';
 import { UserEntity } from '../entities/user.entity';
 import { JwtPayload } from '../types/jwt-payload.interface';
 import { ConflictError, UnauthorizedError } from '../utils/errors.util';
@@ -33,7 +33,7 @@ export class AuthService {
       data: {
         email: dto.email,
         password: hashedPassword,
-        role: dto.role ?? Role.USER,
+        role: Role.USER,
       },
       select: userSelect,
     });

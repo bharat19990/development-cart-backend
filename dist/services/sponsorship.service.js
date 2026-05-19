@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sponsorshipService = exports.SponsorshipService = void 0;
 const client_1 = require("@prisma/client");
+const config_1 = require("../config");
 const enrollment_entity_1 = require("../entities/enrollment.entity");
 const sponsorship_entity_1 = require("../entities/sponsorship.entity");
 const errors_util_1 = require("../utils/errors.util");
@@ -52,6 +53,7 @@ class SponsorshipService {
             throw new errors_util_1.ConflictError('This organization has already sponsored the user for the active session');
         }
         const paymentStatus = dto.paymentStatus ?? client_1.PaymentStatus.PAID;
+        const fee = new client_1.Prisma.Decimal(config_1.config.enrollmentFeeUsd);
         const result = await prisma_service_1.prisma.$transaction(async (tx) => {
             let enrollment = await tx.enrollment.findUnique({
                 where: {
@@ -69,11 +71,16 @@ class SponsorshipService {
                 if (linkedSponsorship) {
                     throw new errors_util_1.ConflictError('Enrollment is already linked to a sponsorship');
                 }
+                if (enrollment.paymentType === client_1.PaymentType.SELF &&
+                    enrollment.paymentStatus === client_1.PaymentStatus.PAID) {
+                    throw new errors_util_1.ConflictError('User already paid for self-enrollment; sponsorship not allowed');
+                }
                 enrollment = await tx.enrollment.update({
                     where: { id: enrollment.id },
                     data: {
                         paymentType: client_1.PaymentType.SPONSORED,
                         paymentStatus,
+                        amount: fee,
                     },
                 });
             }
@@ -84,6 +91,7 @@ class SponsorshipService {
                         sessionId: activeSession.id,
                         paymentType: client_1.PaymentType.SPONSORED,
                         paymentStatus,
+                        amount: fee,
                     },
                 });
             }

@@ -8,5 +8,9 @@ declare const _default: () => {
         secret: string;
         expiresIn: string;
     };
+    enrollmentFeeUsd: number;
+    sessionDurationDays: number;
+    superadminEmail: string;
+    superadminPassword: string;
 };
 export default _default;

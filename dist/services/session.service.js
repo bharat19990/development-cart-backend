@@ -2,8 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sessionService = exports.SessionService = void 0;
 const client_1 = require("@prisma/client");
+const config_1 = require("../config");
 const session_entity_1 = require("../entities/session.entity");
 const errors_util_1 = require("../utils/errors.util");
+const date_util_1 = require("../utils/date.util");
+const session_query_service_1 = require("./session-query.service");
 const prisma_service_1 = require("./prisma.service");
 const sessionInclude = {
     admin: {
@@ -15,21 +18,22 @@ const sessionInclude = {
 };
 class SessionService {
     async create(dto) {
-        if (dto.startsAt && dto.endsAt) {
-            const start = new Date(dto.startsAt);
-            const end = new Date(dto.endsAt);
-            if (end <= start) {
-                throw new errors_util_1.BadRequestError('endsAt must be after startsAt');
-            }
-        }
         await this.assertAdminAssignable(dto.adminId);
         if (dto.organizationId) {
             await this.assertOrganizationExists(dto.organizationId);
         }
-        const status = dto.status ?? client_1.SessionStatus.DRAFT;
+        const startsAt = dto.startsAt ? new Date(dto.startsAt) : new Date();
+        const endsAt = dto.endsAt
+            ? new Date(dto.endsAt)
+            : (0, date_util_1.addDays)(startsAt, config_1.config.sessionDurationDays);
+        if (endsAt <= startsAt) {
+            throw new errors_util_1.BadRequestError('endsAt must be after startsAt');
+        }
+        const status = dto.status ?? client_1.SessionStatus.ACTIVE;
         const session = await prisma_service_1.prisma.$transaction(async (tx) => {
             if (status === client_1.SessionStatus.ACTIVE) {
                 await this.assertNoActiveSession(tx);
+                await this.assertAdminNotInOpenSession(tx, dto.adminId);
             }
             return tx.session.create({
                 data: {
@@ -38,8 +42,8 @@ class SessionService {
                     adminId: dto.adminId,
                     organizationId: dto.organizationId,
                     status,
-                    startsAt: dto.startsAt ? new Date(dto.startsAt) : undefined,
-                    endsAt: dto.endsAt ? new Date(dto.endsAt) : undefined,
+                    startsAt,
+                    endsAt,
                 },
                 include: sessionInclude,
             });
@@ -47,15 +51,12 @@ class SessionService {
         return new session_entity_1.SessionEntity(session);
     }
     async getActive() {
-        const session = await prisma_service_1.prisma.session.findFirst({
-            where: { status: client_1.SessionStatus.ACTIVE },
+        const session = await (0, session_query_service_1.getActiveSessionOrThrow)();
+        const full = await prisma_service_1.prisma.session.findUnique({
+            where: { id: session.id },
             include: sessionInclude,
-            orderBy: { updatedAt: 'desc' },
         });
-        if (!session) {
-            throw new errors_util_1.NotFoundError('No active session found');
-        }
-        return new session_entity_1.SessionEntity(session);
+        return new session_entity_1.SessionEntity(full);
     }
     async assertAdminAssignable(adminId) {
         const admin = await prisma_service_1.prisma.user.findUnique({
@@ -80,11 +81,27 @@ class SessionService {
     }
     async assertNoActiveSession(tx) {
         const activeSession = await tx.session.findFirst({
-            where: { status: client_1.SessionStatus.ACTIVE },
+            where: {
+                status: client_1.SessionStatus.ACTIVE,
+                endsAt: { gte: new Date() },
+            },
             select: { id: true, title: true },
         });
         if (activeSession) {
-            throw new errors_util_1.ConflictError(`Only one ACTIVE session is allowed. Current active session: "${activeSession.title}" (${activeSession.id})`);
+            throw new errors_util_1.ConflictError(`Only one ACTIVE session is allowed. Current: "${activeSession.title}"`);
+        }
+    }
+    async assertAdminNotInOpenSession(tx, adminId) {
+        const existing = await tx.session.findFirst({
+            where: {
+                adminId,
+                status: client_1.SessionStatus.ACTIVE,
+                endsAt: { gte: new Date() },
+            },
+            select: { id: true, title: true },
+        });
+        if (existing) {
+            throw new errors_util_1.ConflictError(`Admin is already assigned to active session "${existing.title}"`);
         }
     }
 }

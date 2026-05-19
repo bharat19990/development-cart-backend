@@ -1,4 +1,5 @@
-import { PaymentStatus, PaymentType } from '@prisma/client';
+import { PaymentStatus, PaymentType, Prisma } from '@prisma/client';
+import { config } from '../config';
 import { EnrollmentEntity } from '../entities/enrollment.entity';
 import { ActiveSessionContext } from '../types/active-session.interface';
 import { RequestUser } from '../types/request-user.interface';
@@ -16,6 +17,7 @@ const enrollmentSelect = {
   sessionId: true,
   paymentType: true,
   paymentStatus: true,
+  amount: true,
   enrolledAt: true,
   updatedAt: true,
 } as const;
@@ -33,39 +35,37 @@ export class EnrollmentService {
           sessionId: activeSession.id,
         },
       },
-      select: { id: true },
+      include: { sponsorship: { select: { id: true } } },
     });
 
     if (existing) {
       throw new ConflictError('You are already enrolled in the active session');
     }
 
-    const paymentStatus = await this.resolvePaymentStatus(
-      user,
-      activeSession.id,
-      dto,
-    );
+    const fee = new Prisma.Decimal(config.enrollmentFeeUsd);
 
-    const enrollment = await prisma.enrollment.create({
-      data: {
-        userId: user.id,
-        sessionId: activeSession.id,
-        paymentType: dto.paymentType,
-        paymentStatus,
-      },
-      select: enrollmentSelect,
-    });
-
-    return new EnrollmentEntity(enrollment);
-  }
-
-  private async resolvePaymentStatus(
-    user: RequestUser,
-    sessionId: string,
-    dto: EnrollDto,
-  ): Promise<PaymentStatus> {
     if (dto.paymentType === PaymentType.SELF) {
-      return PaymentStatus.PENDING;
+      if (dto.amount !== config.enrollmentFeeUsd) {
+        throw new BadRequestError(
+          `Enrollment fee must be exactly $${config.enrollmentFeeUsd} USD`,
+        );
+      }
+
+      const enrollment = await prisma.enrollment.create({
+        data: {
+          userId: user.id,
+          sessionId: activeSession.id,
+          paymentType: PaymentType.SELF,
+          paymentStatus: PaymentStatus.PAID,
+          amount: fee,
+        },
+        select: enrollmentSelect,
+      });
+
+      return new EnrollmentEntity({
+        ...enrollment,
+        amount: enrollment.amount.toString(),
+      });
     }
 
     const organizationId =
@@ -73,7 +73,7 @@ export class EnrollmentService {
 
     if (!organizationId) {
       throw new BadRequestError(
-        'organizationId is required for SPONSORED enrollment',
+        'organizationId is required for SPONSORED enrollment, or use POST /sponsor first',
       );
     }
 
@@ -82,36 +82,74 @@ export class EnrollmentService {
         organizationId_userId_sessionId: {
           organizationId,
           userId: user.id,
-          sessionId,
+          sessionId: activeSession.id,
         },
       },
-      select: { paymentStatus: true },
     });
 
     if (!sponsorship) {
       throw new NotFoundError(
-        'No sponsorship found for this user, organization, and active session',
+        'No sponsorship found. Organization must sponsor you before SPONSORED enrollment.',
       );
     }
 
-    if (sponsorship.paymentStatus !== PaymentStatus.PAID) {
-      return PaymentStatus.PENDING;
-    }
+    const paymentStatus =
+      sponsorship.paymentStatus === PaymentStatus.PAID
+        ? PaymentStatus.PAID
+        : PaymentStatus.PENDING;
 
-    return PaymentStatus.PAID;
+    const enrollment = await prisma.enrollment.create({
+      data: {
+        userId: user.id,
+        sessionId: activeSession.id,
+        paymentType: PaymentType.SPONSORED,
+        paymentStatus,
+        amount: fee,
+      },
+      select: enrollmentSelect,
+    });
+
+    return new EnrollmentEntity({
+      ...enrollment,
+      amount: enrollment.amount.toString(),
+    });
+  }
+
+  async getMyEnrollments(userId: string) {
+    const enrollments = await prisma.enrollment.findMany({
+      where: { userId },
+      select: {
+        ...enrollmentSelect,
+        session: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            startsAt: true,
+            endsAt: true,
+            admin: { select: { id: true, email: true } },
+          },
+        },
+      },
+      orderBy: { enrolledAt: 'desc' },
+    });
+
+    return enrollments.map((e) => ({
+      ...new EnrollmentEntity({
+        ...e,
+        amount: e.amount.toString(),
+      }),
+      session: e.session,
+      isExpired: e.session.endsAt < new Date(),
+    }));
   }
 
   private async getUserOrganizationId(userId: string): Promise<string | null> {
     const record = await prisma.user.findUnique({
       where: { id: userId },
-      select: { organizationId: true, role: true },
+      select: { organizationId: true },
     });
-
-    if (!record?.organizationId) {
-      return null;
-    }
-
-    return record.organizationId;
+    return record?.organizationId ?? null;
   }
 }
 

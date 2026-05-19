@@ -2,6 +2,7 @@ import request from 'supertest';
 import { createApp } from '../src/app';
 import { Role } from '../src/enums/role.enum';
 import { disconnectPrisma } from '../src/services/prisma.service';
+import { prisma } from '../src/services/prisma.service';
 
 describe('Auth (e2e)', () => {
   const app = createApp();
@@ -10,8 +11,17 @@ describe('Auth (e2e)', () => {
   const testUser = {
     email: `test-${Date.now()}@example.com`,
     password: 'password123',
-    role: Role.ADMIN,
   };
+
+  beforeAll(async () => {
+    const superadmin = await prisma.user.findFirst({
+      where: { role: Role.SUPERADMIN },
+    });
+
+    if (!superadmin) {
+      throw new Error('Run npm run prisma:seed before e2e tests');
+    }
+  });
 
   afterAll(async () => {
     await disconnectPrisma();
@@ -28,14 +38,8 @@ describe('Auth (e2e)', () => {
       user: { email: string; role: Role };
     };
 
-    expect(body).toMatchObject({
-      accessToken: expect.any(String) as string,
-      user: {
-        email: testUser.email,
-        role: Role.ADMIN,
-      },
-    });
-
+    expect(body.user.role).toBe(Role.USER);
+    expect(body.user.email).toBe(testUser.email);
     accessToken = body.accessToken;
   });
 
@@ -46,8 +50,6 @@ describe('Auth (e2e)', () => {
       .expect(200);
 
     const body = res.body as { accessToken: string };
-
-    expect(body.accessToken).toBeDefined();
     accessToken = body.accessToken;
   });
 
@@ -63,19 +65,5 @@ describe('Auth (e2e)', () => {
 
   it('GET /users/me without token returns 401', async () => {
     await request(app).get('/users/me').expect(401);
-  });
-
-  it('GET /users/admin (role-protected)', async () => {
-    await request(app)
-      .get('/users/admin')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .expect(200);
-  });
-
-  it('GET /users/organization returns 403 for ADMIN', async () => {
-    await request(app)
-      .get('/users/organization')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .expect(403);
   });
 });

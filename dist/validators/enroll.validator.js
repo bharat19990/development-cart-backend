@@ -10,10 +10,13 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EnrollDto = void 0;
+const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
+const app_constants_1 = require("../constants/app.constants");
 const payment_type_enum_1 = require("../enums/payment-type.enum");
 class EnrollDto {
     paymentType;
+    amount;
     organizationId;
 }
 exports.EnrollDto = EnrollDto;
@@ -21,6 +24,13 @@ __decorate([
     (0, class_validator_1.IsEnum)(payment_type_enum_1.PaymentType),
     __metadata("design:type", String)
 ], EnrollDto.prototype, "paymentType", void 0);
+__decorate([
+    (0, class_validator_1.ValidateIf)((o) => o.paymentType === payment_type_enum_1.PaymentType.SELF),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)({ maxDecimalPlaces: 2 }),
+    (0, class_validator_1.Equals)(app_constants_1.ENROLLMENT_FEE_USD),
+    __metadata("design:type", Number)
+], EnrollDto.prototype, "amount", void 0);
 __decorate([
     (0, class_validator_1.ValidateIf)((o) => o.paymentType === payment_type_enum_1.PaymentType.SPONSORED),
     (0, class_validator_1.IsUUID)(),

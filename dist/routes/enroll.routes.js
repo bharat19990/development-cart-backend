@@ -41,5 +41,6 @@ const validate_middleware_1 = require("../middlewares/validate.middleware");
 const enroll_validator_1 = require("../validators/enroll.validator");
 const router = (0, express_1.Router)();
 router.post('/', authenticate_user_middleware_1.authenticateUser, require_active_session_middleware_1.requireActiveSession, (0, validate_middleware_1.validateBody)(enroll_validator_1.EnrollDto), enrollmentController.enroll);
+router.get('/history', authenticate_user_middleware_1.authenticateUser, enrollmentController.getMyEnrollments);
 exports.default = router;
 //# sourceMappingURL=enroll.routes.js.map

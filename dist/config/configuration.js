@@ -10,5 +10,9 @@ exports.default = () => ({
         secret: process.env.JWT_SECRET ?? 'change-me-in-production',
         expiresIn: process.env.JWT_EXPIRES_IN ?? '1d',
     },
+    enrollmentFeeUsd: parseFloat(process.env.ENROLLMENT_FEE_USD ?? '100'),
+    sessionDurationDays: parseInt(process.env.SESSION_DURATION_DAYS ?? '30', 10),
+    superadminEmail: process.env.SUPERADMIN_EMAIL ?? 'superadmin@system.local',
+    superadminPassword: process.env.SUPERADMIN_PASSWORD ?? 'SuperAdmin123!',
 });
 //# sourceMappingURL=configuration.js.map

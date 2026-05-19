@@ -15,5 +15,9 @@ exports.config = {
     port: appConfig.port,
     database: appConfig.database,
     jwt: appConfig.jwt,
+    enrollmentFeeUsd: appConfig.enrollmentFeeUsd,
+    sessionDurationDays: appConfig.sessionDurationDays,
+    superadminEmail: appConfig.superadminEmail,
+    superadminPassword: appConfig.superadminPassword,
 };
 //# sourceMappingURL=index.js.map

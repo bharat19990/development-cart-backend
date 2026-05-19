@@ -7,6 +7,7 @@ class EnrollmentEntity {
     sessionId;
     paymentType;
     paymentStatus;
+    amount;
     enrolledAt;
     updatedAt;
     constructor(partial) {

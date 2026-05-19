@@ -1,4 +1,5 @@
-import { PaymentStatus, PaymentType, Role } from '@prisma/client';
+import { PaymentStatus, PaymentType, Prisma, Role } from '@prisma/client';
+import { config } from '../config';
 import { EnrollmentEntity } from '../entities/enrollment.entity';
 import { SponsorshipEntity } from '../entities/sponsorship.entity';
 import { ActiveSessionContext } from '../types/active-session.interface';
@@ -71,6 +72,7 @@ export class SponsorshipService {
     }
 
     const paymentStatus = dto.paymentStatus ?? PaymentStatus.PAID;
+    const fee = new Prisma.Decimal(config.enrollmentFeeUsd);
 
     const result = await prisma.$transaction(async (tx) => {
       let enrollment = await tx.enrollment.findUnique({
@@ -94,11 +96,21 @@ export class SponsorshipService {
           );
         }
 
+        if (
+          enrollment.paymentType === PaymentType.SELF &&
+          enrollment.paymentStatus === PaymentStatus.PAID
+        ) {
+          throw new ConflictError(
+            'User already paid for self-enrollment; sponsorship not allowed',
+          );
+        }
+
         enrollment = await tx.enrollment.update({
           where: { id: enrollment.id },
           data: {
             paymentType: PaymentType.SPONSORED,
             paymentStatus,
+            amount: fee,
           },
         });
       } else {
@@ -108,6 +120,7 @@ export class SponsorshipService {
             sessionId: activeSession.id,
             paymentType: PaymentType.SPONSORED,
             paymentStatus,
+            amount: fee,
           },
         });
       }

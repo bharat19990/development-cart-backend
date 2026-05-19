@@ -1,13 +1,17 @@
 import 'reflect-metadata';
 import 'dotenv/config';
 export declare const config: {
-    readonly nodeEnv: string;
-    readonly port: number;
-    readonly database: {
+    nodeEnv: string;
+    port: number;
+    database: {
         url: string | undefined;
     };
-    readonly jwt: {
+    jwt: {
         secret: string;
         expiresIn: string;
     };
+    enrollmentFeeUsd: number;
+    sessionDurationDays: number;
+    superadminEmail: string;
+    superadminPassword: string;
 };

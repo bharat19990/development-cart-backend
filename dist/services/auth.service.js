@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authService = exports.AuthService = void 0;
-const role_enum_1 = require("../enums/role.enum");
+const client_1 = require("@prisma/client");
 const user_entity_1 = require("../entities/user.entity");
 const errors_util_1 = require("../utils/errors.util");
 const hash_util_1 = require("../utils/hash.util");
@@ -28,7 +28,7 @@ class AuthService {
             data: {
                 email: dto.email,
                 password: hashedPassword,
-                role: dto.role ?? role_enum_1.Role.USER,
+                role: client_1.Role.USER,
             },
             select: userSelect,
         });
